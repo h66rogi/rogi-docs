@@ -23,8 +23,9 @@ curl -fsS 'https://data-api.rogi.chat/v1/broadcasts?limit=20'
       "startedAt": "2026-09-23T08:00:00Z",
       "endedAt": "2026-09-23T10:00:00Z",
       "title": "방송 제목",
-      "recordingStartedAt": "2026-09-23T08:02:00Z",
+      "recordingStartedAt": "2026-09-23T08:02:05Z",
       "sourceGapDetected": false,
+      "knownArchiveGap": false,
       "complete": false
     }
   ],
@@ -49,7 +50,7 @@ curl -fsS 'https://data-api.rogi.chat/v1/broadcasts/606c9e5a-05ab-4b25-a5c2-ef03
     {
       "eventId": "example-event-id",
       "sessionId": "606c9e5a-05ab-4b25-a5c2-ef03870a73a4",
-      "position": 1,
+      "position": 12345,
       "receivedAt": "2026-09-23T08:02:05Z",
       "user": {
         "id": "pseudonymous-user-id",
@@ -64,7 +65,7 @@ curl -fsS 'https://data-api.rogi.chat/v1/broadcasts/606c9e5a-05ab-4b25-a5c2-ef03
 }
 ```
 
-`limit` 기본값은 50, 최대값은 200입니다. `position`은 **수집·저장 순서**이며 SOOP의 전역 채팅 순서가 아닙니다. `user.id`는 원본 사용자 ID가 아닌 가명이며, `idVersion`이 바뀌면 같은 사용자의 값도 달라질 수 있습니다.
+`limit` 기본값은 50, 최대값은 200입니다. `position`은 전체 보관 채팅에 부여하는 **수집·저장 순번**입니다. 방송마다 1부터 시작하거나 연속으로 증가하지 않으며 SOOP의 전역 채팅 순서도 아닙니다. `user.id`는 원본 사용자 ID가 아닌 가명이며, `idVersion`이 바뀌면 같은 사용자의 값도 달라질 수 있습니다.
 
 ## 페이지 넘기기
 
@@ -82,8 +83,9 @@ curl -fsSG 'https://data-api.rogi.chat/v1/broadcasts' --data-urlencode 'cursor=Y
 
 | 필드 | 해석 |
 | --- | --- |
-| `recordingStartedAt` | 해당 방송에서 보관을 시작한 시각. 방송 시작보다 늦을 수 있습니다. |
-| `sourceGapDetected` | 수집기가 원천 방송의 연결 공백을 감지했는지 여부. `false`도 전체 무누락을 증명하지는 않습니다. |
+| `recordingStartedAt` | 해당 방송에서 처음 보관된 채팅을 받은 시각. 방송 시작보다 늦을 수 있습니다. |
+| `sourceGapDetected` | 방송 탐색기가 재시작 후 탐색 관측 공백을 감지했는지 여부. 채팅 연결·저장 공백을 직접 측정하지 않습니다. |
+| `knownArchiveGap` | 보관 스풀 저장 실패가 감지된 방송이면 `true`입니다. `false`도 누락이 없다는 뜻은 아닙니다. |
 | `complete` | `false`를 반환합니다. 전체 방송 채팅의 무누락 수집이 확인되지 않았음을 뜻합니다. |
 
 예시는 모두 형식 설명용 데이터입니다.

@@ -53,7 +53,7 @@ connect();
 }
 ```
 
-`currentCursor`와 `earliestCursor`는 보관된 채팅이 없으면 `null`입니다. `broadcastState`의 값은 [방송 상태](./status)의 `state`와 같습니다. `broadcastId`는 지난 방송 조회용 `sessionId`가 아닙니다.
+`currentCursor`와 `earliestCursor`는 보관된 채팅이 없으면 `null`입니다. 방송 진단에 성공한 경우 `broadcastState`는 [방송 상태](./status)의 `state`와 같습니다. 진단에 실패하면 WebSocket은 `lookup_failed`를 보내고 HTTP 상태 조회는 `503 status_unavailable`을 반환합니다. `broadcastId`는 지난 방송 조회용 `sessionId`가 아닙니다.
 
 ### `chat.message`
 
@@ -90,7 +90,7 @@ connect();
 {"type":"chat.gap","reason":"cursor_expired"}
 ```
 
-이어받을 수 없는 구간이 있을 때 전송됩니다. `reason`은 `cursor_expired`, `stream_reset`, `invalid_event` 중 하나입니다. 서버는 이어받을 수 있는 위치에서 전송을 계속합니다. 누락된 메시지가 필요한 경우 [지난 방송 채팅](./history)을 조회하세요. 보관 기록도 모든 메시지의 복구를 보장하지는 않습니다.
+이어받을 수 없는 구간이 있을 때 전송됩니다. `reason`은 `cursor_expired`, `stream_reset`, `invalid_event` 중 하나입니다. cursor 만료 또는 stream 교체 후에는 **그 시점의 최신 메시지 이후** 새 메시지부터 전송합니다. 이미 보존된 중간 메시지도 자동으로 재생하지 않습니다. 누락된 메시지가 필요한 경우 [지난 방송 채팅](./history)을 조회하세요. 보관 기록도 모든 메시지의 복구를 보장하지는 않습니다.
 
 ### `heartbeat`와 `error`
 
