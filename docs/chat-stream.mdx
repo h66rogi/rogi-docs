@@ -1,0 +1,28 @@
+---
+id: chat-stream
+title: 실시간 채팅
+---
+
+# 실시간 채팅 (계획됨)
+
+`wss://data-api.rogi.chat/v1/chat/stream`은 표준 WebSocket과 JSON 메시지를 사용합니다.
+Socket.IO 프로토콜은 첫 버전의 계약에 포함되지 않습니다.
+
+접속 직후 서버는 버전, 방송 상태와 cursor 보존 범위를 보냅니다. 이어서
+`broadcast.status`, `chat.message`, `chat.gap`, `heartbeat`, `error` 이벤트를 보냅니다.
+
+```json
+{
+  "type": "chat.message",
+  "eventId": "example-event-id",
+  "sessionId": "example-session-id",
+  "cursor": "opaque-reconnect-cursor",
+  "receivedAt": "2026-09-23T08:00:05Z",
+  "user": {"id": "example-user", "displayName": "시청자"},
+  "message": "안녕하세요"
+}
+```
+
+예시는 합성 데이터입니다. 재접속 cursor는 불투명 문자열입니다. Redis의 최근 범위를 벗어나거나
+stream generation이 바뀌면 서버가 `chat.gap`을 보내고 지난 방송 조회로 이어 갈 수 있게 합니다.
+클라이언트는 cursor를 임의로 계산하거나 채팅이 조용하다는 이유로 연결 실패를 단정하지 않아야 합니다.
