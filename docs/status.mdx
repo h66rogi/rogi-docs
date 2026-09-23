@@ -1,14 +1,15 @@
 ---
 id: status
 title: 방송 상태
-author: h66rogi
 ---
 
 # 방송 상태
 
-`GET https://data-api.rogi.chat/v1/broadcasts/current`
+`GET /v1/broadcasts/current`는 방송 여부와 채팅 수집기의 연결 상태를 반환합니다. 인증은 필요하지 않습니다.
 
-응답은 방송 자체의 상태와 collector의 채팅 수집 연결 상태를 **별도 필드**로 제공합니다.
+```sh
+curl -fsS https://data-api.rogi.chat/v1/broadcasts/current
+```
 
 ```json
 {
@@ -26,7 +27,20 @@ author: h66rogi
 }
 ```
 
-예시는 형식 설명용 합성 데이터입니다. 방송 상태는 최대 10초간 캐시됩니다. `state`는 `live`, `offline`, `cookie_required`,
-`auth_required`, `lookup_failed` 중 하나입니다. 마지막 세 상태에서는 `live`가 `null`이며
-이를 방송 종료로 해석하면 안 됩니다. `collection.active=false`는 방송이 꺼졌다는 뜻이 아닙니다.
-상태 조회나 수집 상태 확인이 실패하면 `503`을 반환합니다.
+## 응답 필드
+
+| 필드 | 의미 |
+| --- | --- |
+| `channelId` | 조회 대상 채널. 현재 `h66rogi`입니다. |
+| `live` | `true`: 방송 중, `false`: 방송 종료, `null`: 확인 불가. |
+| `state` | 방송 조회 결과. 아래 값을 참고하세요. |
+| `checkedAt` | 방송 상태를 확인한 시각. 상태 조회는 최대 10초간 캐시됩니다. |
+| `broadcastId` | 플랫폼 방송 ID. 확인되지 않으면 빈 문자열입니다. 지난 방송 조회에 쓰는 `sessionId`와 다릅니다. |
+| `title` | 방송 제목. 확인되지 않으면 빈 문자열입니다. |
+| `collection.active` | 수집이 허용돼 있고 최근에 연결 상태가 확인됐는지 나타냅니다. |
+| `collection.state` | 수집기의 현재 상태 문자열. 방송 여부 판단에는 `live`를 사용하세요. |
+| `collection.lastReceivedAt` | 마지막 채팅 수신 시각. 수신 기록이 없으면 `null`입니다. |
+
+`state`는 `live`, `offline`, `cookie_required`, `auth_required`, `lookup_failed` 중 하나입니다. 마지막 세 값에서는 `live`가 `null`입니다. 이때 방송 종료로 표시하지 말고 상태 확인 불가로 다루세요. `collection.active=false`만으로 방송 종료를 판단할 수도 없습니다.
+
+방송 상태 조회 또는 수집 상태 확인에 실패하면 `503`과 오류 코드를 반환합니다. [오류 목록](./errors)

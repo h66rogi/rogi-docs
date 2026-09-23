@@ -1,0 +1,226 @@
+openapi: 3.1.0
+info:
+  title: Rogi 방송 데이터 API
+  version: 1.0.0
+  description: SOOP h66rogi 채널의 방송 상태와 채팅을 읽는 공개 HTTP API입니다. 실시간 WebSocket 계약은 https://docs.rogi.chat/chat-stream 에서 확인하세요.
+servers:
+  - url: https://data-api.rogi.chat
+security: []
+tags:
+  - name: Broadcast
+    description: 방송 상태와 보관된 방송
+  - name: Chat
+    description: 최근 채팅과 방송별 보관 채팅
+paths:
+  /v1/broadcasts/current:
+    get:
+      tags: [Broadcast]
+      operationId: getCurrentBroadcast
+      summary: 현재 방송 상태
+      description: 방송 상태와 채팅 수집 연결 상태를 별도로 반환합니다. 방송 조회 결과는 최대 10초간 캐시됩니다.
+      responses:
+        '200':
+          description: 방송 및 수집 상태
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/CurrentBroadcast'}
+        '429': {$ref: '#/components/responses/RateLimited'}
+        '503':
+          description: 방송 또는 수집 상태 확인 실패
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+  /v1/chats/recent:
+    get:
+      tags: [Chat]
+      operationId: listRecentChats
+      summary: 최근 채팅
+      description: Redis의 최대 24시간 및 10,000개 stream 항목 보존 범위에서 조회합니다. cursor가 없으면 최신 메시지를 시간순으로 반환합니다. WebSocket 재접속 cursor와 호환됩니다.
+      parameters:
+        - {$ref: '#/components/parameters/RecentCursor'}
+        - name: limit
+          in: query
+          description: 반환할 메시지 수. 기본값 50.
+          schema: {type: integer, minimum: 1, maximum: 100, default: 50}
+      responses:
+        '200':
+          description: 최근 채팅 페이지
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/RecentChats'}
+        '400': {$ref: '#/components/responses/InvalidRequest'}
+        '409':
+          description: cursor 보존 범위 만료 또는 stream 교체
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+        '429': {$ref: '#/components/responses/RateLimited'}
+        '503': {$ref: '#/components/responses/Unavailable'}
+  /v1/broadcasts:
+    get:
+      tags: [Broadcast]
+      operationId: listBroadcasts
+      summary: 보관된 방송 목록
+      description: 한 건 이상 보관된 채팅이 있는 방송만 시작 시각 최신순으로 반환합니다.
+      parameters:
+        - {$ref: '#/components/parameters/HistoryCursor'}
+        - name: limit
+          in: query
+          description: 반환할 방송 수. 기본값 20.
+          schema: {type: integer, minimum: 1, maximum: 100, default: 20}
+      responses:
+        '200':
+          description: 방송 페이지
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/BroadcastPage'}
+        '400': {$ref: '#/components/responses/InvalidRequest'}
+        '429': {$ref: '#/components/responses/RateLimited'}
+        '503': {$ref: '#/components/responses/Unavailable'}
+  /v1/broadcasts/{sessionId}/chats:
+    get:
+      tags: [Chat]
+      operationId: listBroadcastChats
+      summary: 방송별 보관 채팅
+      description: sessionId에 속한 채팅을 수집 position 오름차순으로 반환합니다.
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          description: 방송 목록에서 반환한 공개 sessionId.
+          schema: {type: string, format: uuid}
+        - {$ref: '#/components/parameters/HistoryCursor'}
+        - name: limit
+          in: query
+          description: 반환할 채팅 수. 기본값 50.
+          schema: {type: integer, minimum: 1, maximum: 200, default: 50}
+      responses:
+        '200':
+          description: 방송 채팅 페이지
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/BroadcastChats'}
+        '400': {$ref: '#/components/responses/InvalidRequest'}
+        '404':
+          description: 보관된 방송 없음
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+        '429': {$ref: '#/components/responses/RateLimited'}
+        '503': {$ref: '#/components/responses/Unavailable'}
+components:
+  parameters:
+    RecentCursor:
+      name: cursor
+      in: query
+      description: 최근 채팅 또는 WebSocket에서 받은 불투명 cursor.
+      schema: {type: string}
+    HistoryCursor:
+      name: cursor
+      in: query
+      description: 같은 보관 조회 경로의 nextCursor를 그대로 전달합니다.
+      schema: {type: string}
+  responses:
+    InvalidRequest:
+      description: 유효하지 않은 cursor 또는 limit
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/Error'}
+    RateLimited:
+      description: 전체 API 요청 제한 초과
+      headers:
+        Retry-After:
+          description: 재시도 전 대기할 초
+          schema: {type: string, const: '1'}
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/Error'}
+    Unavailable:
+      description: 읽기 저장소 또는 수집 상태를 확인할 수 없음
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/Error'}
+  schemas:
+    Error:
+      type: object
+      required: [code]
+      properties:
+        code: {type: string, description: 오류와 제한 문서의 코드 표를 참고하세요.}
+    CurrentBroadcast:
+      type: object
+      required: [channelId, live, state, checkedAt, broadcastId, title, collection]
+      properties:
+        channelId: {type: string, const: h66rogi}
+        live: {type: [boolean, 'null'], description: null은 방송 여부 확인 불가입니다.}
+        state: {type: string, enum: [live, offline, cookie_required, auth_required, lookup_failed]}
+        checkedAt: {type: string, format: date-time}
+        broadcastId: {type: string, description: SOOP 방송 ID. 보관 조회의 sessionId와 다릅니다.}
+        title: {type: string}
+        collection:
+          type: object
+          required: [active, state, lastReceivedAt]
+          properties:
+            active: {type: boolean}
+            state: {type: string}
+            lastReceivedAt: {type: [string, 'null'], format: date-time}
+    LiveChat:
+      type: object
+      required: [type, eventId, cursor, receivedAt, user, message]
+      properties:
+        type: {type: string, const: chat.message}
+        eventId: {type: string}
+        cursor: {type: string}
+        receivedAt: {type: string, format: date-time}
+        user:
+          type: object
+          required: [displayName]
+          properties: {displayName: {type: string}}
+        message: {type: string}
+    RecentChats:
+      type: object
+      required: [messages, nextCursor, retention]
+      properties:
+        messages: {type: array, items: {$ref: '#/components/schemas/LiveChat'}}
+        nextCursor: {type: [string, 'null']}
+        retention: {type: string, const: up to 24 hours and 10000 stream entries}
+    Broadcast:
+      type: object
+      required: [sessionId, startedAt, endedAt, title, recordingStartedAt, sourceGapDetected, complete]
+      properties:
+        sessionId: {type: string, format: uuid}
+        startedAt: {type: string, format: date-time}
+        endedAt: {type: [string, 'null'], format: date-time}
+        title: {type: [string, 'null']}
+        recordingStartedAt: {type: [string, 'null'], format: date-time}
+        sourceGapDetected: {type: boolean, description: 원천 연결 공백 감지 여부. false도 무누락 증명은 아닙니다.}
+        complete: {type: boolean, const: false, description: 전체 방송 채팅의 무누락 수집이 확인되지 않았습니다.}
+    BroadcastPage:
+      type: object
+      required: [broadcasts, nextCursor]
+      properties:
+        broadcasts: {type: array, items: {$ref: '#/components/schemas/Broadcast'}}
+        nextCursor: {type: [string, 'null']}
+    ArchivedChat:
+      type: object
+      required: [eventId, sessionId, position, receivedAt, user, message]
+      properties:
+        eventId: {type: string}
+        sessionId: {type: string, format: uuid}
+        position: {type: integer, format: int64, minimum: 1, description: 수집·저장 순서}
+        receivedAt: {type: string, format: date-time}
+        user:
+          type: object
+          required: [id, idVersion, displayName]
+          properties:
+            id: {type: string, description: 가명 사용자 ID}
+            idVersion: {type: integer, minimum: 0}
+            displayName: {type: string}
+        message: {type: string}
+    BroadcastChats:
+      type: object
+      required: [sessionId, chats, nextCursor, complete]
+      properties:
+        sessionId: {type: string, format: uuid}
+        chats: {type: array, items: {$ref: '#/components/schemas/ArchivedChat'}}
+        nextCursor: {type: [string, 'null']}
+        complete: {type: boolean, const: false}
