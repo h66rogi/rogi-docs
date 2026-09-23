@@ -3,18 +3,24 @@ id: history
 title: 지난 방송과 채팅
 ---
 
-# 지난 방송과 채팅 (계획됨)
+# 지난 방송과 채팅
 
 | 요청 | 내용 |
 | --- | --- |
 | `GET /v1/broadcasts?cursor=&limit=` | 저장된 방송 목록과 다음 페이지 cursor |
 | `GET /v1/broadcasts/{sessionId}/chats?cursor=&limit=` | 한 방송의 채팅 기록 |
 
-보관 정책에는 시간 기준 만료가 없습니다. 온라인 색인과 별도 비공개 Cloudflare R2 archive를 사용하도록 설계했습니다.
-실제 archive가 시작되기 전의 채팅과 기존 Redis 24시간 범위에서 사라진 기록은 소급 복원할 수 없습니다.
-방송 응답에는 archive 시작 시각과 `complete`/`gaps` 같은 수집 품질 표시를 포함할 계획입니다.
-현재 draft 구현의 방송 목록은 archive에 채팅이 수락된 방송만 포함합니다. 채팅이 없는 방송까지
-목록에 포함할지는 공개 계약을 확정하기 전에 결정합니다.
+보관 정책에는 시간 기준 만료가 없습니다. 최근 기록은 PostgreSQL에 두고 오래된 구간은 비공개
+Cloudflare R2에 보관합니다. archive가 활성화되기 전의 채팅과 기존 Redis 범위에서 사라진 기록은
+소급 복원할 수 없습니다. 방송 목록에는 archive에 채팅이 수락된 방송만 나타납니다.
 
-페이지 cursor는 서버가 발급하는 불투명 문자열로 다룹니다. 방송 내 채팅 정렬은 수집 순서입니다.
-최대 페이지 크기와 정확한 응답 필드는 API 구현 및 운영 검증 후 공개합니다.
+방송 목록 응답은 `broadcasts`와 `nextCursor`를 포함합니다. 각 항목에는 `sessionId`,
+`startedAt`, `endedAt`, `title`, `recordingStartedAt`, `sourceGapDetected`, `complete`가 있습니다.
+기본 20건, 최대 100건입니다. `complete`는 현재 항상 `false`이며 전체 채팅의 무누락 수집을
+보증하지 않습니다.
+
+방송 채팅 응답은 `sessionId`, `chats`, `nextCursor`, `complete`를 포함합니다. 각 채팅에는
+`eventId`, `sessionId`, `position`, `receivedAt`, `user.id`, `user.idVersion`,
+`user.displayName`, `message`가 있습니다. 기본 50건, 최대 200건이며 `position`은 수집 순서입니다.
+`user.id`는 원본 사용자 ID가 아닌 가명입니다. 목록과 채팅의 cursor는 서로 호환되지 않는 불투명
+문자열입니다. 잘못된 cursor·limit는 `400`, 없는 방송은 `404`, 저장소 장애는 `503`입니다.

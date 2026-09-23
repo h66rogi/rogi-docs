@@ -4,7 +4,7 @@ title: 방송 상태
 author: h66rogi
 ---
 
-# 방송 상태 (계획됨)
+# 방송 상태
 
 `GET https://data-api.rogi.chat/v1/broadcasts/current`
 
@@ -17,6 +17,7 @@ author: h66rogi
   "state": "live",
   "checkedAt": "2026-09-23T08:00:00Z",
   "broadcastId": "example-broadcast-id",
+  "title": "방송 제목",
   "collection": {
     "active": true,
     "state": "connected",
@@ -25,6 +26,7 @@ author: h66rogi
 }
 ```
 
-예시는 형식 설명용 합성 데이터입니다. `state`는 `live`, `offline`, `cookie_required`,
+예시는 형식 설명용 합성 데이터입니다. 방송 상태는 최대 10초간 캐시됩니다. `state`는 `live`, `offline`, `cookie_required`,
 `auth_required`, `lookup_failed` 중 하나입니다. 마지막 세 상태에서는 `live`가 `null`이며
 이를 방송 종료로 해석하면 안 됩니다. `collection.active=false`는 방송이 꺼졌다는 뜻이 아닙니다.
+상태 조회나 수집 상태 확인이 실패하면 `503`을 반환합니다.
