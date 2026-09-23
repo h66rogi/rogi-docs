@@ -5,11 +5,39 @@ title: 실시간 채팅
 
 # 실시간 채팅
 
-`wss://data-api.rogi.chat/v1/chat/stream`은 표준 WebSocket과 JSON 메시지를 사용합니다.
-Socket.IO 프로토콜은 첫 버전의 계약에 포함되지 않습니다.
+`wss://data-api.rogi.chat/v1/chat/stream`에 표준 WebSocket으로 연결합니다. 서버에서 JSON 이벤트를 보내며 클라이언트가 전송할 메시지는 없습니다. Socket.IO 프로토콜은 지원하지 않습니다.
 
-접속 직후 서버는 버전, 방송 상태와 cursor 보존 범위를 보냅니다. 이어서
-`broadcast.status`, `chat.message`, `chat.gap`, `heartbeat`, `error` 이벤트를 보냅니다.
+```js
+let cursor;
+
+function connect() {
+  const url = new URL('wss://data-api.rogi.chat/v1/chat/stream');
+  if (cursor) url.searchParams.set('cursor', cursor);
+  const socket = new WebSocket(url);
+
+  socket.onmessage = ({data}) => {
+    const event = JSON.parse(data);
+    if (event.type === 'chat.message') {
+      cursor = event.cursor;
+      console.log(event.user.displayName, event.message);
+    }
+    if (event.type === 'chat.gap') {
+      cursor = undefined;
+      // 필요한 과거 기록은 방송별 채팅 조회 API에서 다시 읽습니다.
+    }
+  };
+
+  socket.onclose = () => setTimeout(connect, 1000);
+}
+
+connect();
+```
+
+연결 직후 `hello`를 받습니다. cursor를 지정하지 않으면 연결 당시 최신 메시지 **이후**부터 받습니다. 연결이 끝나면 마지막 `chat.message.cursor`로 다시 연결하세요. 연결 수명은 최대 2시간이며, `heartbeat`는 약 20초 간격으로 전달됩니다.
+
+## 이벤트
+
+### `hello`
 
 ```json
 {
@@ -19,11 +47,15 @@ Socket.IO 프로토콜은 첫 버전의 계약에 포함되지 않습니다.
   "broadcastState": "live",
   "broadcastId": "example-broadcast-id",
   "title": "방송 제목",
-  "currentCursor": "opaque-cursor",
-  "earliestCursor": "opaque-cursor",
+  "currentCursor": "opaque-current-cursor",
+  "earliestCursor": "opaque-earliest-cursor",
   "cursorRetention": "up to 24 hours and 10000 stream entries"
 }
 ```
+
+`currentCursor`와 `earliestCursor`는 보관된 채팅이 없으면 `null`입니다. `broadcastState`의 값은 [방송 상태](./status)의 `state`와 같습니다. `broadcastId`는 지난 방송 조회용 `sessionId`가 아닙니다.
+
+### `chat.message`
 
 ```json
 {
@@ -36,12 +68,66 @@ Socket.IO 프로토콜은 첫 버전의 계약에 포함되지 않습니다.
 }
 ```
 
-예시는 합성 데이터입니다. 새 연결에 cursor가 없으면 현재 시점부터 전달합니다. 이어받으려면 마지막
-`chat.message.cursor`를 URL의 `?cursor=`에 넣습니다. Redis의 최근 범위(최대 24시간, 10,000건)를
-벗어나거나 stream generation이 바뀌면 서버가 `chat.gap`을 보냅니다. 이 경우 과거 조회 API로
-복구 가능한지 확인하세요. 연결은 최대 2시간이며 heartbeat는 약 20초마다 전달됩니다.
+`cursor`는 재접속 위치입니다. `eventId`는 중복 메시지를 식별할 때 사용할 수 있습니다. 실시간 메시지에는 보관 기록의 `sessionId`와 가명 사용자 ID가 포함되지 않습니다.
 
-`GET /v1/chats/recent?cursor=&limit=`으로 같은 Redis 범위를 HTTP로 조회할 수도 있습니다.
-응답은 `messages`, `nextCursor`, `retention`이며 기본 50건, 최대 100건입니다. 만료된 cursor는
-`409 cursor_expired`입니다. 실시간 메시지에는 영구 archive의 `sessionId`나 가명 사용자 ID가
-포함되지 않습니다.
+### `broadcast.status`
+
+```json
+{
+  "type": "broadcast.status",
+  "state": "offline",
+  "broadcastId": "",
+  "title": "",
+  "checkedAt": "2026-09-23T09:00:00Z"
+}
+```
+
+방송 상태·ID·제목 중 하나가 바뀌면 전송됩니다. 채팅 수집 연결 상태는 이 이벤트에 포함되지 않습니다. 필요하면 [방송 상태 API](./status)를 조회하세요.
+
+### `chat.gap`
+
+```json
+{"type":"chat.gap","reason":"cursor_expired"}
+```
+
+이어받을 수 없는 구간이 있을 때 전송됩니다. `reason`은 `cursor_expired`, `stream_reset`, `invalid_event` 중 하나입니다. 서버는 이어받을 수 있는 위치에서 전송을 계속합니다. 누락된 메시지가 필요한 경우 [지난 방송 채팅](./history)을 조회하세요. 보관 기록도 모든 메시지의 복구를 보장하지는 않습니다.
+
+### `heartbeat`와 `error`
+
+```json
+{"type":"heartbeat","serverTime":"2026-09-23T08:00:20Z"}
+```
+
+```json
+{"type":"error","code":"chat_unavailable"}
+```
+
+`error` 이후 연결이 종료됩니다. `chat_unavailable` 또는 `chat_generation_unavailable`이 발생하면 잠시 뒤 재연결하세요.
+
+## 최근 채팅 HTTP 조회
+
+`GET /v1/chats/recent?cursor=&limit=`은 WebSocket과 같은 짧은 보존 범위를 조회합니다.
+cursor 없이 요청하면 보존된 최신 채팅부터 최대 `limit`건을 시간순으로 반환합니다.
+
+```sh
+curl -fsS 'https://data-api.rogi.chat/v1/chats/recent?limit=50'
+```
+
+```json
+{
+  "messages": [
+    {
+      "type": "chat.message",
+      "eventId": "example-event-id",
+      "cursor": "opaque-next-message-cursor",
+      "receivedAt": "2026-09-23T08:00:05Z",
+      "user": {"displayName": "시청자"},
+      "message": "안녕하세요"
+    }
+  ],
+  "nextCursor": "opaque-next-message-cursor",
+  "retention": "up to 24 hours and 10000 stream entries"
+}
+```
+
+`limit` 기본값은 50, 최대값은 100입니다. `messages`가 비어 있어도 읽기 위치가 이동했다면 `nextCursor`가 있을 수 있습니다. `nextCursor`가 `null`이면 이번 응답에서 새 읽기 위치가 없습니다. cursor가 보존 범위 밖이거나 stream이 교체됐으면 `409 cursor_expired`를 반환합니다. 이 cursor는 WebSocket의 `?cursor=`에도 사용할 수 있습니다.

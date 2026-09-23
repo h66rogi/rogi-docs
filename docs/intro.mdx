@@ -1,23 +1,39 @@
 ---
 id: intro
-title: Rogi 방송 데이터 API
+title: 시작하기
 slug: /
 ---
 
 # Rogi 방송 데이터 API
 
-후로기(`h66rogi`) 방송의 상태, 실시간 채팅, 지난 방송의 채팅 기록을 읽기 위한 공개 API 문서입니다.
+SOOP `h66rogi` 채널의 방송 상태와 채팅을 읽을 수 있습니다. 방송 중에는 WebSocket으로 새 채팅을 받고, 지난 방송의 채팅은 HTTP로 조회합니다.
 
-기본 주소는 `https://data-api.rogi.chat`입니다. 첫 버전은 SOOP의 `h66rogi` 한 채널을 대상으로
-하며 인증 없이 읽을 수 있습니다. 표준 WebSocket을 제공하고 Socket.IO는 지원하지 않습니다.
-
-| 주제 | 내용 |
+| 주소 | 용도 |
 | --- | --- |
-| [방송 상태](./status) | 방송 on/off와 수집 연결 상태를 구분합니다. |
-| [실시간 채팅](./chat-stream) | WebSocket 이벤트와 재접속 규칙입니다. |
-| [지난 방송](./history) | 방송·채팅 목록과 보관 품질 표시입니다. |
-| [진행 상태](./roadmap) | 운영 범위와 알려진 제약입니다. |
+| `https://data-api.rogi.chat` | HTTP API |
+| `wss://data-api.rogi.chat/v1/chat/stream` | 실시간 WebSocket |
+| [OpenAPI 3.1 명세](/openapi.yaml) | HTTP 응답·오류 스키마 |
 
-모든 시각은 RFC 3339 형식의 UTC입니다. 요청 제한은 전체 API 기준 초당 20회, 순간 최대 60회이며
-동시 WebSocket 연결은 32개까지입니다. 한도 초과 시 `429 rate_limited`와 `Retry-After: 1`을
-반환합니다. 향후 API key 인증을 추가할 수 있습니다.
+인증 없이 사용할 수 있습니다. 응답과 이벤트는 JSON이며 시각은 RFC 3339 UTC 형식입니다. 별도 SDK나 Socket.IO 클라이언트는 필요하지 않습니다.
+
+## 첫 요청
+
+```sh
+curl -fsS https://data-api.rogi.chat/v1/broadcasts/current
+```
+
+`live`가 `true`이면 방송 중이고, `false`이면 방송이 꺼져 있습니다. `null`이면 현재 방송 여부를 확인할 수 없습니다. 채팅 수집 연결은 별도의 `collection` 필드에서 확인하세요. [필드 설명](./status)
+
+## 채팅 읽기
+
+- 새 채팅: [WebSocket 연결과 재접속](./chat-stream)
+- 최근 채팅: [`GET /v1/chats/recent`](./chat-stream#최근-채팅-http-조회)
+- 지난 방송: [방송 목록과 채팅 기록](./history)
+
+최근 채팅의 cursor와 지난 방송의 cursor는 서로 호환되지 않습니다. 각 응답의 `nextCursor`를 같은 경로의 다음 요청에 그대로 전달하세요.
+
+## 사용 시 알아둘 점
+
+실시간·최근 채팅은 최대 24시간 또는 Redis stream 10,000개 항목 범위에서 제공됩니다. 지난 방송 채팅에는 시간 기준 삭제 정책이 없지만, 보관 기능이 시작되기 전의 기록은 조회할 수 없습니다. 보관 채팅의 `complete`는 `false`이므로 전체 방송 채팅이 빠짐없이 저장됐다는 의미로 사용하지 마세요. [보관 필드 설명](./history#보관-범위와-품질)
+
+API 전체 요청 제한은 초당 20회, 순간 최대 60회입니다. 동시 WebSocket 연결은 최대 32개입니다. 제한과 재시도 방법은 [오류와 제한](./errors)을 참고하세요.
