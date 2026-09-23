@@ -127,7 +127,7 @@ components:
         application/json:
           schema: {$ref: '#/components/schemas/Error'}
     RateLimited:
-      description: 전체 API 요청 제한 초과
+      description: API 요청량 또는 보관 조회 동시 실행 제한 초과
       headers:
         Retry-After:
           description: 재시도 전 대기할 초
@@ -185,14 +185,15 @@ components:
         retention: {type: string, const: up to 24 hours and 10000 stream entries}
     Broadcast:
       type: object
-      required: [sessionId, startedAt, endedAt, title, recordingStartedAt, sourceGapDetected, complete]
+      required: [sessionId, startedAt, endedAt, title, recordingStartedAt, sourceGapDetected, knownArchiveGap, complete]
       properties:
         sessionId: {type: string, format: uuid}
         startedAt: {type: string, format: date-time}
         endedAt: {type: [string, 'null'], format: date-time}
         title: {type: [string, 'null']}
-        recordingStartedAt: {type: [string, 'null'], format: date-time}
-        sourceGapDetected: {type: boolean, description: 원천 연결 공백 감지 여부. false도 무누락 증명은 아닙니다.}
+        recordingStartedAt: {type: [string, 'null'], format: date-time, description: 해당 방송에서 처음 보관된 채팅의 수신 시각.}
+        sourceGapDetected: {type: boolean, description: 방송 탐색기 재시작 후 관측 공백 감지 여부. 채팅 연결 공백을 직접 측정하지 않습니다.}
+        knownArchiveGap: {type: boolean, description: 보관 스풀 저장 실패가 감지됐는지 여부. false도 무누락 보장은 아닙니다.}
         complete: {type: boolean, const: false, description: 전체 방송 채팅의 무누락 수집이 확인되지 않았습니다.}
     BroadcastPage:
       type: object
@@ -206,7 +207,7 @@ components:
       properties:
         eventId: {type: string}
         sessionId: {type: string, format: uuid}
-        position: {type: integer, format: int64, minimum: 1, description: 수집·저장 순서}
+        position: {type: integer, format: int64, minimum: 1, description: 전체 보관 채팅에 부여하는 비연속 수집·저장 순번}
         receivedAt: {type: string, format: date-time}
         user:
           type: object
