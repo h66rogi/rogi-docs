@@ -8,9 +8,9 @@ title: 진행 상태
 | 단계 | 상태 |
 | --- | --- |
 | collector 내부 실시간 채팅 수집·private gRPC | 운영 중. 후로기 본인 실방송 최종 검증은 별도 |
-| 영구 채팅 archive와 방송별 색인 | 계획됨 |
-| 공개 Go data-api와 Cloudflare Tunnel | 계획됨 |
-| `docs.rogi.chat` 정적 문서 사이트 | 구축 중 |
+| 영구 채팅 archive와 방송별 색인 | [저장 계약·스키마 PR 작성 중](https://github.com/h66rogi/rogi-collector/pull/5); 운영 미적용 |
+| 공개 Go data-api와 Cloudflare Tunnel | Go 읽기 핸들러 초안 작성 중; Tunnel·운영 배포 전 |
+| `docs.rogi.chat` 정적 문서 사이트 | Cloudflare Workers에 배포됨 |
 
 [설계 원문](https://github.com/h66rogi/rogi-collector/blob/main/docs/public-data-api-design.md)을 기준으로
 구현 단계마다 명세를 갱신합니다. 페이지에 `계획됨`으로 표시된 기능은 공개 API가 아닙니다.
