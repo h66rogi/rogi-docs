@@ -1,4 +1,4 @@
-# 후로기 Developers
+# h66rogi Developers
 
 [docs.rogi.chat](https://docs.rogi.chat)의 Docusaurus 소스입니다. [Data API](docs/intro.mdx), [로기마블 사용법](docs/marble/overview.mdx), [rogi-collector 기술 설명](docs/collector/overview.mdx)을 한곳에 모읍니다. HTTP 계약은 [OpenAPI 3.1 명세](static/openapi.yaml)에, WebSocket 이벤트는 [실시간 채팅 문서](docs/chat-stream.mdx)에 있습니다. 공개 API 구현은 [rogi-collector](https://github.com/h66rogi/rogi-collector)의 Go `query/publicapi` 패키지를 따릅니다.
 

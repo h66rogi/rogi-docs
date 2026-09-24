@@ -3,7 +3,7 @@ import type {Config} from '@docusaurus/types';
 import type * as Preset from '@docusaurus/preset-classic';
 
 const config: Config = {
-  title: '후로기 Developers',
+  title: 'h66rogi Developers',
   tagline: '후로기 제품과 방송 데이터의 개발자 문서',
   favicon: 'img/favicon.svg',
   url: 'https://docs.rogi.chat',
@@ -24,7 +24,7 @@ const config: Config = {
   themeConfig: {
     colorMode: {respectPrefersColorScheme: true},
     navbar: {
-      title: '후로기 Developers',
+      title: 'h66rogi Developers',
       items: [
         {to: '/', label: '문서 홈', position: 'left'},
         {to: '/data-api/', label: 'Data API', position: 'left'},
