@@ -1,0 +1,21 @@
+---
+title: rogi-collector
+slug: /collector/
+description: 후로기 SOOP 방송 데이터 수집기의 역할과 공개 경계
+---
+
+# rogi-collector
+
+`rogi-collector`는 SOOP `h66rogi` 방송을 찾아 채팅과 별풍선 후원을 수집하는 Go 서비스입니다. 공개 [Data API](/data-api/)는 방송 상태·채팅을 읽기 전용으로 제공하고, 로기마블은 별도의 인증된 내부 gRPC 계약으로 입력을 받습니다.
+
+## 읽는 순서
+
+1. [데이터 흐름](./pipeline): discover, coordinator, worker, 저장소와 API의 책임
+2. [전달 보장과 복구](./reliability): 후원 journal, ACK, 채팅 보관과 공백
+3. [Data API](/data-api/): 공개 HTTP·WebSocket 계약과 예시
+
+## 공개 경계
+
+인터넷에서는 `data-api.rogi.chat`의 공개 읽기 API만 사용합니다. 로기마블용 gRPC, PostgreSQL, Redis, 객체 저장소와 SOOP 로그인 정보는 공개 API가 아닙니다. 공개 API는 다른 채널의 수집을 시작하거나 후원을 게임에 주입하는 기능을 제공하지 않습니다.
+
+이 문서는 [rogi-collector 공개 소스](https://github.com/h66rogi/rogi-collector)와 [공개 API 구조 문서](https://github.com/h66rogi/rogi-collector/blob/main/docs/public-data-api-architecture.md)를 요약합니다. 실제 채널 방송 중 수신과 게임 적용의 검증 상태는 [수집기 구현 상태](https://github.com/h66rogi/rogi-collector/blob/main/docs/implementation-status.md)를 참고하세요.

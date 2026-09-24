@@ -1,0 +1,24 @@
+---
+title: 전달 보장과 복구
+slug: /collector/reliability
+---
+
+# 전달 보장과 복구
+
+## 후원: 저장 후 전달
+
+worker는 별풍선의 **원천 정수 개수와 종류**를 보존합니다. 저장소 장애에는 후원 전용 disk spool을 사용하고, PostgreSQL의 journal과 outbox에 같은 event ID를 저장합니다. 로기마블 소비자는 cursor 이후 이벤트를 읽고 자기 inbox와 연속 cursor를 저장한 다음 ACK합니다. ACK 응답이 유실되면 저장된 cursor로 재시도하므로 같은 후원은 다시 전달될 수 있습니다.
+
+로기마블은 `(consumerId, eventId)`를 기준으로 중복 수락을 막고 게임 처리는 별도 단계에서 수행합니다. **ACK는 영속 수락을 뜻하며 주사위 실행이나 OBS 표시 완료를 뜻하지 않습니다.** cursor 만료나 저장 세대 변경에는 조용히 최신 이벤트로 이동하지 않고 운영자 복구 절차가 필요합니다.
+
+원천 거래 ID가 확인되지 않은 재접속 직후의 비슷한 후원은 무조건 합치지 않습니다. 불확실한 관측은 별도 event ID와 `reconnect_ambiguous` 상태로 남깁니다. 수집 전에 플랫폼 연결이 끊겼거나 영속 저장 전 호스트와 디스크를 함께 잃은 입력까지 복구할 수 있다고 보장하지 않습니다.
+
+## 채팅: 짧은 실시간 범위와 별도 보관
+
+Redis 최근 채팅은 **최대 24시간·10,000개 항목** 범위입니다. WebSocket cursor가 만료되거나 stream이 교체되면 `chat.gap`을 보냅니다. 재연결은 그 시점 이후의 새 채팅부터 이어지며, 중간 누락분을 자동 재생하지 않습니다.
+
+일반 채팅의 보관 경로는 별도 spool → PostgreSQL → gzip NDJSON segment → R2입니다. exporter는 업로드 객체를 다시 읽고 SHA-256을 확인한 뒤 색인을 확정합니다. 색인 확정 전에는 PostgreSQL 본문을 삭제하지 않습니다. 보관 채팅에는 시간 기준 만료를 두지 않지만 보관 기능 이전의 채팅은 소급 생성할 수 없습니다.
+
+공개 [지난 방송 조회](/history)의 `complete=false`는 전체 방송 채팅의 무누락 수집을 증명하지 못한다는 뜻입니다. `sourceGapDetected`와 `knownArchiveGap`도 각각 탐색 관측 공백과 감지된 spool 저장 실패만 나타냅니다. 이 값을 완전성 보증으로 해석하지 마세요.
+
+상세 내부 계약은 [collector 코드 인계](https://github.com/h66rogi/rogi-collector/blob/main/docs/collector-code-handoff.md)와 [공개 API 구조](https://github.com/h66rogi/rogi-collector/blob/main/docs/public-data-api-architecture.md)에 있습니다.

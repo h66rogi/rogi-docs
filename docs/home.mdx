@@ -1,0 +1,49 @@
+---
+id: home
+title: 후로기 Developers
+slug: /
+sidebar_label: 문서 홈
+description: 후로기 Data API, 로기마블 사용법, rogi-collector 설계를 한곳에서 찾아보세요.
+---
+
+<div className="portal-hero">
+  <p className="portal-eyebrow">HUROGI / DEVELOPERS</p>
+  <h1>후로기 Developers</h1>
+  <p>방송 데이터로 만드는 경험을 위한 문서입니다. 공개 API를 연결하고, 로기마블을 운영하고, 수집기가 데이터를 전달하는 과정을 살펴보세요.</p>
+  <div className="portal-actions">
+    <a className="button button--primary button--lg" href="/data-api/">Data API 시작하기</a>
+    <a className="button button--secondary button--lg" href="/marble/">로기마블 사용법</a>
+  </div>
+</div>
+
+<div className="portal-grid">
+  <a className="portal-card" href="/data-api/">
+    <span className="portal-card__index">01 / API</span>
+    <h2>Data API</h2>
+    <p>방송 상태, 최근·실시간 채팅, 지난 방송 기록을 HTTP와 WebSocket으로 읽습니다.</p>
+    <span className="portal-card__link">API 문서 보기 →</span>
+  </a>
+  <a className="portal-card" href="/marble/">
+    <span className="portal-card__index">02 / PRODUCT</span>
+    <h2>로기마블</h2>
+    <p>운영 콘솔에서 세션과 보드를 관리하고 OBS에 게임 화면을 띄우는 흐름을 안내합니다.</p>
+    <span className="portal-card__link">사용법 보기 →</span>
+  </a>
+  <a className="portal-card" href="/collector/">
+    <span className="portal-card__index">03 / SYSTEM</span>
+    <h2>rogi-collector</h2>
+    <p>SOOP 방송 탐지부터 채팅 보관, 후원 전달까지의 구현과 복구 경계를 설명합니다.</p>
+    <span className="portal-card__link">설계 읽기 →</span>
+  </a>
+</div>
+
+## 어디서 시작할까요?
+
+| 하고 싶은 일 | 바로가기 |
+| --- | --- |
+| 현재 방송 여부를 확인하기 | [방송 상태 API](/status) |
+| 새 채팅을 실시간으로 받기 | [WebSocket과 재접속](/chat-stream) |
+| 방송 중 게임을 조작하기 | [로기마블 빠른 시작](/marble/quickstart) |
+| 수집·저장 흐름 이해하기 | [수집기 데이터 흐름](/collector/pipeline) |
+
+이 포털은 공개 기능과 설계를 함께 다룹니다. 실제 방송·주루마블 연동의 검증 범위는 각 문서에 구분해 적었습니다.

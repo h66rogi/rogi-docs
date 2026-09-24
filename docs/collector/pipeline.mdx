@@ -1,0 +1,32 @@
+---
+title: 데이터 흐름과 저장소
+slug: /collector/pipeline
+---
+
+# 데이터 흐름과 저장소
+
+```text
+SOOP 방송 → discover → coordinator → worker
+                                    ├─ 별풍선 → spool → PostgreSQL journal/outbox → private gRPC → 로기마블
+                                    ├─ 최근 채팅 → Redis stream → 공개 HTTP/WebSocket
+                                    └─ 보관 채팅 → spool → PostgreSQL → R2 segment → 공개 과거 조회
+```
+
+## 역할별 책임
+
+| 역할 | 하는 일 |
+| --- | --- |
+| `discover` | 지정된 `h66rogi` 채널의 방송 상태를 확인합니다. 종료·쿠키 필요·조회 실패를 구분합니다. |
+| `coordinator` | 수집할 채널의 worker 소유권을 결정하고 저장합니다. |
+| `worker` | SOOP 연결·입장 확인·재접속, 채팅과 후원 입력을 처리합니다. |
+| `query` | 인증된 로기마블 소비자에게 후원·채팅 조회와 ACK 계약을 제공합니다. |
+| `data-api` | 공개 HTTP/WebSocket으로 방송 상태·채팅을 읽기 전용 제공합니다. |
+| `archive-exporter` | 오래된 채팅을 압축 segment로 만들어 비공개 R2에 보관합니다. |
+
+PostgreSQL은 할당·후원 journal·보관 색인처럼 영속적인 기준 상태를 보유합니다. Redis는 최근 채팅과 빠른 알림에 사용됩니다. 후원 전달을 Redis 메시지 한 번의 성공 여부에 맡기지 않습니다.
+
+## 공개 요청 경로
+
+`data-api.rogi.chat` 요청은 Cloudflare Tunnel을 지나 Go `data-api`로 전달됩니다. 현재 방송 상태는 진단 결과를 최대 10초 동안 캐시합니다. 최근 채팅과 WebSocket은 Redis stream, 지난 방송 채팅은 PostgreSQL 색인과 R2 객체를 읽습니다. 공개 DB 역할은 필요한 테이블의 읽기 권한만, R2 자격 증명은 객체 읽기 권한만 갖습니다.
+
+공개 endpoint와 응답 필드는 [Data API 문서](/data-api/)에 있습니다. 구현 단위는 [rogi-collector 저장소 구성](https://github.com/h66rogi/rogi-collector#저장소-구성)에서 확인할 수 있습니다.

@@ -1,10 +1,10 @@
 ---
 id: intro
 title: 시작하기
-slug: /
+slug: /data-api/
 ---
 
-# Rogi 방송 데이터 API
+# Data API 시작하기
 
 SOOP `h66rogi` 채널의 방송 상태와 채팅을 읽을 수 있습니다. 방송 중에는 WebSocket으로 새 채팅을 받고, 지난 방송의 채팅은 HTTP로 조회합니다.
 
@@ -22,18 +22,18 @@ SOOP `h66rogi` 채널의 방송 상태와 채팅을 읽을 수 있습니다. 방
 curl -fsS https://data-api.rogi.chat/v1/broadcasts/current
 ```
 
-`live`가 `true`이면 방송 중이고, `false`이면 방송이 꺼져 있습니다. `null`이면 현재 방송 여부를 확인할 수 없습니다. 채팅 수집 연결은 별도의 `collection` 필드에서 확인하세요. [필드 설명](./status)
+`live`가 `true`이면 방송 중이고, `false`이면 방송이 꺼져 있습니다. `null`이면 현재 방송 여부를 확인할 수 없습니다. 채팅 수집 연결은 별도의 `collection` 필드에서 확인하세요. [필드 설명](/status)
 
 ## 채팅 읽기
 
-- 새 채팅: [WebSocket 연결과 재접속](./chat-stream)
-- 최근 채팅: [`GET /v1/chats/recent`](./chat-stream#최근-채팅-http-조회)
-- 지난 방송: [방송 목록과 채팅 기록](./history)
+- 새 채팅: [WebSocket 연결과 재접속](/chat-stream)
+- 최근 채팅: [`GET /v1/chats/recent`](/chat-stream#최근-채팅-http-조회)
+- 지난 방송: [방송 목록과 채팅 기록](/history)
 
 최근 채팅의 cursor와 지난 방송의 cursor는 서로 호환되지 않습니다. 각 응답의 `nextCursor`를 같은 경로의 다음 요청에 그대로 전달하세요.
 
 ## 사용 시 알아둘 점
 
-실시간·최근 채팅은 최대 24시간 또는 Redis stream 10,000개 항목 범위에서 제공됩니다. 지난 방송 채팅에는 시간 기준 삭제 정책이 없지만, 보관 기능이 시작되기 전의 기록은 조회할 수 없습니다. 보관 채팅의 `complete`는 `false`이므로 전체 방송 채팅이 빠짐없이 저장됐다는 의미로 사용하지 마세요. [보관 필드 설명](./history#보관-범위와-품질)
+실시간·최근 채팅은 최대 24시간 또는 Redis stream 10,000개 항목 범위에서 제공됩니다. 지난 방송 채팅에는 시간 기준 삭제 정책이 없지만, 보관 기능이 시작되기 전의 기록은 조회할 수 없습니다. 보관 채팅의 `complete`는 `false`이므로 전체 방송 채팅이 빠짐없이 저장됐다는 의미로 사용하지 마세요. [보관 필드 설명](/history#보관-범위와-품질)
 
-API 전체 요청 제한은 초당 20회, 순간 최대 60회입니다. 동시 WebSocket 연결은 최대 32개입니다. 제한과 재시도 방법은 [오류와 제한](./errors)을 참고하세요.
+API 전체 요청 제한은 초당 20회, 순간 최대 60회입니다. 동시 WebSocket 연결은 최대 32개입니다. 제한과 재시도 방법은 [오류와 제한](/errors)을 참고하세요.

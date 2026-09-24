@@ -3,8 +3,8 @@ import type {Config} from '@docusaurus/types';
 import type * as Preset from '@docusaurus/preset-classic';
 
 const config: Config = {
-  title: 'Rogi API 문서',
-  tagline: '후로기 방송 데이터 API',
+  title: '후로기 Developers',
+  tagline: '후로기 제품과 방송 데이터의 개발자 문서',
   favicon: 'img/favicon.svg',
   url: 'https://docs.rogi.chat',
   baseUrl: '/',
@@ -24,15 +24,19 @@ const config: Config = {
   themeConfig: {
     colorMode: {respectPrefersColorScheme: true},
     navbar: {
-      title: 'Rogi API',
+      title: '후로기 Developers',
       items: [
-        {type: 'docSidebar', sidebarId: 'apiSidebar', position: 'left', label: '문서'},
-        {href: 'https://github.com/h66rogi/rogi-collector', label: '소스', position: 'right'},
+        {to: '/', label: '문서 홈', position: 'left'},
+        {to: '/data-api/', label: 'Data API', position: 'left'},
+        {to: '/marble/', label: '로기마블', position: 'left'},
+        {to: '/collector/', label: '수집기', position: 'left'},
+        {href: 'https://github.com/h66rogi', label: 'GitHub', position: 'right'},
       ],
     },
     footer: {
       style: 'dark',
       links: [{title: '프로젝트', items: [
+        {label: '로기마블', href: 'https://github.com/h66rogi/rogimarble'},
         {label: '수집기', href: 'https://github.com/h66rogi/rogi-collector'},
         {label: '문서 저장소', href: 'https://github.com/h66rogi/rogi-docs'},
       ]}],
